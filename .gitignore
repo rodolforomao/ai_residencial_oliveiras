@@ -1,0 +1,4 @@
+.vscode
+*_python_*
+*_pycache_*
+config/config.py
