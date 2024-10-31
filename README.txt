@@ -14,3 +14,6 @@ touch project/main.py
 
 
 pip install -r requirements.txt
+
+
+pip install mercadopago

@@ -3,6 +3,7 @@ import time
 import json
 from models.api_model import APIModel
 from models.api_make_model import APIMakeModel
+from models.mercado_pago_model import MercadoPagoModel
 from models.google_calendar_model import GoogleCalendar
 from models.date_util import DateUtil
 
@@ -11,6 +12,7 @@ from views.view import View
 class MainController:
     def __init__(self):
         self.api_model = APIModel()
+        self.api_mp_model = MercadoPagoModel()
         self.view = View()
 
     def iniciar(self):
@@ -21,6 +23,10 @@ class MainController:
                 request_response = self.api_model.criar_run(pergunta)
             else:
                 request_response = self.api_model.criar_mensagem(pergunta)
+                if 'error' in request_response:
+                    message = request_response['error'].get('message')
+                    if message:
+                        print(message)
                 self.api_model.manter_run()
 
             aguardando_resposta = True
@@ -73,8 +79,25 @@ class MainController:
                                         # "Reserva realizada com sucesso."
                                         self.view.exibir_resposta_json(json_data)
                                         #self.view.exibir_resposta(resposta)
-                                        request_response = self.api_model.criar_mensagem("Faça um resumo da reserva e mande os dados para pagamento")
-                                        self.api_model.manter_run()
+                                        #request_response = self.api_model.criar_mensagem("Faça um resumo da reserva e mande os dados para pagamento")
+                                        #self.api_model.manter_run()
+                                        
+                        elif function_name == "Pagamento":
+                            if function_json:
+                                json_data = json.loads(function_json)
+                                #self.api_make_model = APIMakeModel(self.api_model.thread_id,self.api_model.run_id,self.api_model.run_status, self.api_model.call_id, self.api_model.arguments)
+                                self.date_util = DateUtil()
+                                json_data = self.date_util.check_date_agendar(json_data)
+                                response = self.api_mp_model.generate_with_json(json_data)
+                                if response:
+                                    if 'approved' in response.text:
+                                        aguardando_recuperacao_mensagem = False
+                                        aguardando_resposta = False
+                                        # "Reserva realizada com sucesso."
+                                        #self.view.exibir_resposta_json(json_data)
+                                        #self.view.exibir_resposta(resposta)
+                                        #request_response = self.api_model.criar_mensagem("Faça um resumo da reserva e mande os dados para pagamento")
+                                        #self.api_model.manter_run()
 
                         else:
                             pass
