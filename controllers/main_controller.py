@@ -3,24 +3,24 @@ import time
 import json
 from models.api_model import APIModel
 from models.api_make_model import APIMakeModel
+from models.google_calendar_model import GoogleCalendar
+from models.date_util import DateUtil
+
 from views.view import View
 
 class MainController:
     def __init__(self):
         self.api_model = APIModel()
-        
         self.view = View()
 
     def iniciar(self):
         while True:
-            pergunta = self.view.capturar_resposta("Digite sua pergunta: ")
+            pergunta = self.view.capturar_resposta()
             
             if not self.api_model.thread_id and not self.api_model.run_id:
-                response = self.api_model.criar_run()
-                
-                #response = self.api_model.criar_run()
+                request_response = self.api_model.criar_run(pergunta)
             else:
-                self.api_model.criar_mensagem(pergunta)
+                request_response = self.api_model.criar_mensagem(pergunta)
                 self.api_model.manter_run()
 
             aguardando_resposta = True
@@ -52,7 +52,33 @@ class MainController:
                             if function_json:
                                 json_data = json.loads(function_json)
                                 self.api_make_model = APIMakeModel(self.api_model.thread_id,self.api_model.run_id,self.api_model.run_status, self.api_model.call_id, self.api_model.arguments)
-                                self.api_make_model.webhook_agendamento(json_data)
+                                self.date_util = DateUtil()
+                                json_data = self.date_util.check_date(json_data)
+                                self.api_make_model.webhook_consultar_disponibilidade(json_data)
+                                
+                                #self.api_google_calendar = GoogleCalendar()
+                                #self.api_google_calendar.check_date()
+                                
+                        elif function_name == "Agendar":
+                            if function_json:
+                                json_data = json.loads(function_json)
+                                self.api_make_model = APIMakeModel(self.api_model.thread_id,self.api_model.run_id,self.api_model.run_status, self.api_model.call_id, self.api_model.arguments)
+                                self.date_util = DateUtil()
+                                json_data = self.date_util.check_date_agendar(json_data)
+                                response = self.api_make_model.webhook_realizar_agendamento(json_data)
+                                if response:
+                                    if 'confirmed' in response.text:
+                                        aguardando_recuperacao_mensagem = False
+                                        aguardando_resposta = False
+                                        # "Reserva realizada com sucesso."
+                                        self.view.exibir_resposta_json(json_data)
+                                        #self.view.exibir_resposta(resposta)
+                                        request_response = self.api_model.criar_mensagem("Faça um resumo da reserva e mande os dados para pagamento")
+                                        self.api_model.manter_run()
+
+                        else:
+                            pass
+                            
                         self.view.tratar_status(run_status)
                     if run_status == "in_progress":
                         if toggleMsg:

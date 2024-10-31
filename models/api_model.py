@@ -2,6 +2,7 @@
 import requests
 from config.config import API_KEY, API_URL, ID_ASSISTENT
 
+
 class APIModel:
     def __init__(self, thread_id=None, run_id=None, run_status=None, call_id=None, arguments=None):
         self.thread_id = thread_id
@@ -41,19 +42,29 @@ class APIModel:
             self.run_status = response.get('status')
             self.call_id = self.get_call_id(response)
             self.arguments = self.get_function_arguments(response)
-            
+        else:
+            pass
         return response
 
-    def criar_run(self):
-        #url = f"{API_URL}/{self.thread_id}/runs"
+    def criar_run(self, pergunta):
         url = f"{API_URL}/runs"
         headers = self.get_headers()
-        data = {"assistant_id": ID_ASSISTENT}
+        data = {
+            "assistant_id": ID_ASSISTENT,
+            "thread": {
+                "messages": [
+                    {"role": "user", "content": pergunta}
+                ]
+            }
+        }
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             result = response.json()
             self.run_id = result.get("id")
             self.thread_id = result.get("thread_id")
+        else:
+            print('Status code: ' + str(response.status_code))
+            print('Erro: ' + response.text)
         return response
 
     def manter_run(self):
@@ -68,42 +79,43 @@ class APIModel:
 
     def get_call_id(self, status_response):
         # Call id: data.required_action.submit_tool_outputs.tool_calls[0].id
-        return  (
-                    status_response.get('required_action') and
-                    status_response['required_action'].get('submit_tool_outputs') and
-                    status_response['required_action']['submit_tool_outputs'].get('tool_calls') and
-                    len(status_response['required_action']['submit_tool_outputs']['tool_calls']) > 0 and
-                    status_response['required_action']['submit_tool_outputs']['tool_calls'][0].get('id')
-                )
+        return (
+            status_response.get('required_action') and
+            status_response['required_action'].get('submit_tool_outputs') and
+            status_response['required_action']['submit_tool_outputs'].get('tool_calls') and
+            len(status_response['required_action']['submit_tool_outputs']['tool_calls']) > 0 and
+            status_response['required_action']['submit_tool_outputs']['tool_calls'][0].get(
+                'id')
+        )
 
     def get_function_arguments(self, status_response):
         # Arguments: data.required_action.submit_tool_outputs.tool_calls[0].function.arguments
-        return  (
-                    status_response.get('required_action') and
-                    status_response['required_action'].get('submit_tool_outputs') and
-                    status_response['required_action']['submit_tool_outputs'].get('tool_calls') and
-                    len(status_response['required_action']['submit_tool_outputs']['tool_calls']) > 0 and
-                    status_response['required_action']['submit_tool_outputs']['tool_calls'][0].get('function') and
-                    status_response['required_action']['submit_tool_outputs']['tool_calls'][0]['function'].get('arguments')
+        return (
+            status_response.get('required_action') and
+            status_response['required_action'].get('submit_tool_outputs') and
+            status_response['required_action']['submit_tool_outputs'].get('tool_calls') and
+            len(status_response['required_action']['submit_tool_outputs']['tool_calls']) > 0 and
+            status_response['required_action']['submit_tool_outputs']['tool_calls'][0].get('function') and
+            status_response['required_action']['submit_tool_outputs']['tool_calls'][0]['function'].get(
+                'arguments')
         )
-        
+
     def get_response(self, resposta):
         return (
-                resposta.get("data") and 
-                resposta["data"][0].get("content") and 
-                resposta["data"][0]["content"][0].get("text") and 
-                resposta["data"][0]["content"][0]["text"].get("value")
-            )
-        
-        
+            resposta.get("data") and
+            resposta["data"][0].get("content") and
+            resposta["data"][0]["content"][0].get("text") and
+            resposta["data"][0]["content"][0]["text"].get("value")
+        )
+
     def get_function_properties(self, status_response, key):
         required_action = status_response.get('required_action', {})
         submit_tool_outputs = required_action.get('submit_tool_outputs', {})
         tool_calls = submit_tool_outputs.get('tool_calls', [])
-        
+
         # Verificar se a lista 'tool_calls' não está vazia e se o primeiro item contém 'function' e 'name'
         if tool_calls and 'function' in tool_calls[0] and 'name' in tool_calls[0]['function']:
             return tool_calls[0]['function'][key]
-        
+
         # Retornar um valor padrão (por exemplo, None) caso algo esteja faltando
         return None

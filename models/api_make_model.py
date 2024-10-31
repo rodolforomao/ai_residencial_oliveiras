@@ -1,6 +1,6 @@
 # models/api_model.py
 import requests
-from config.config import API_KEY, API_URL, ID_ASSISTENT, WEBHOOK_MAKE_AGENDAMENTO
+from config.config import API_KEY, API_URL, ID_ASSISTENT, WEBHOOK_MAKE_AGENDAMENTO, WEBHOOK_MAKE_AGENDAR
 
 class APIMakeModel:
     def __init__(self, thread_id=None, run_id=None, run_status=None, call_id=None, arguments=None):
@@ -21,8 +21,16 @@ class APIMakeModel:
             "OpenAI-Beta": "assistants=v2"
         }
 
-    def webhook_agendamento(self, json):
+    def webhook_consultar_disponibilidade(self, json):
         url = f"{WEBHOOK_MAKE_AGENDAMENTO}"
+        headers = self.get_headers_simple()
+        json = self.webhook_add_submit_output(json)
+        data = json
+        response = requests.post(url, headers=headers, json=data)
+        return response
+
+    def webhook_realizar_agendamento(self, json):
+        url = f"{WEBHOOK_MAKE_AGENDAR}"
         headers = self.get_headers_simple()
         json = self.webhook_add_submit_output(json)
         data = json
