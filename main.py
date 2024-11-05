@@ -4,7 +4,7 @@ import unittest
 
 if __name__ == "__main__":
     # Running the unit test
-    #unittest.main()
+    unittest.main()
     
     # Optionally run the MainController as well
     controller = MainController()

@@ -6,6 +6,8 @@ from models.api_make_model import APIMakeModel
 from models.mercado_pago_model import MercadoPagoModel
 from models.google_calendar_model import GoogleCalendar
 from models.date_util import DateUtil
+from utils.requests_util import RequestsUtil
+from utils.google_calendar_utils import GoogleCalendarUtil
 
 from views.view import View
 
@@ -13,6 +15,7 @@ class MainController:
     def __init__(self):
         self.api_model = APIModel()
         self.api_mp_model = MercadoPagoModel()
+        
         self.view = View()
 
     def iniciar(self):
@@ -57,13 +60,21 @@ class MainController:
                         if function_name == "cAgenda":
                             if function_json:
                                 json_data = json.loads(function_json)
-                                self.api_make_model = APIMakeModel(self.api_model.thread_id,self.api_model.run_id,self.api_model.run_status, self.api_model.call_id, self.api_model.arguments)
                                 self.date_util = DateUtil()
                                 json_data = self.date_util.check_date(json_data)
-                                self.api_make_model.webhook_consultar_disponibilidade(json_data)
+                                # self.api_make_model = APIMakeModel(self.api_model.thread_id,self.api_model.run_id,self.api_model.run_status, self.api_model.call_id, self.api_model.arguments)
+                                # self.api_make_model.webhook_consultar_disponibilidade(json_data)
                                 
-                                #self.api_google_calendar = GoogleCalendar()
-                                #self.api_google_calendar.check_date()
+                                googlecalendarutil = GoogleCalendarUtil()
+                                output_text = googlecalendarutil.check_available(json_data)
+                                requests_util = RequestsUtil(self)
+                                response_submit_tool_output = requests_util.request_submit_tool(output_text)
+                                
+                                if response_submit_tool_output:
+                                    if response_submit_tool_output.status_code == 200:
+                                        print('submit_tool_ouput: ok - cAgenda')
+                                        #aguardando_recuperacao_mensagem = False
+                                        #aguardando_resposta = False
                                 
                         elif function_name == "Agendar":
                             if function_json:
@@ -71,16 +82,19 @@ class MainController:
                                 self.api_make_model = APIMakeModel(self.api_model.thread_id,self.api_model.run_id,self.api_model.run_status, self.api_model.call_id, self.api_model.arguments)
                                 self.date_util = DateUtil()
                                 json_data = self.date_util.check_date_agendar(json_data)
-                                response = self.api_make_model.webhook_realizar_agendamento(json_data)
-                                if response:
-                                    if 'confirmed' in response.text:
-                                        aguardando_recuperacao_mensagem = False
-                                        aguardando_resposta = False
-                                        # "Reserva realizada com sucesso."
+                                #response = self.api_make_model.webhook_realizar_agendamento(json_data)
+                                
+                                googlecalendarutil = GoogleCalendarUtil()
+                                output_text = googlecalendarutil.create_event(json_data)
+                                requests_util = RequestsUtil(self)
+                                response_submit_tool_output = requests_util.request_submit_tool(output_text)
+                                
+                                if output_text and response_submit_tool_output:
+                                    if response_submit_tool_output.status_code == 200 and 'confirmed' in output_text.get('status'):
+                                        #aguardando_recuperacao_mensagem = False
+                                        #aguardando_resposta = False
                                         self.view.exibir_resposta_json(json_data)
-                                        #self.view.exibir_resposta(resposta)
-                                        #request_response = self.api_model.criar_mensagem("Faça um resumo da reserva e mande os dados para pagamento")
-                                        #self.api_model.manter_run()
+                                        
                                         
                         elif function_name == "Pagamento":
                             if function_json:
@@ -93,11 +107,24 @@ class MainController:
                                     if 'approved' in response.text:
                                         aguardando_recuperacao_mensagem = False
                                         aguardando_resposta = False
-                                        # "Reserva realizada com sucesso."
-                                        #self.view.exibir_resposta_json(json_data)
-                                        #self.view.exibir_resposta(resposta)
-                                        #request_response = self.api_model.criar_mensagem("Faça um resumo da reserva e mande os dados para pagamento")
-                                        #self.api_model.manter_run()
+                                        output_text = 'Link para pagamento:' + json.loads(response.text).get("init_point")
+                                        requests_util = RequestsUtil(self)
+                                        response_submit_tool_output = requests_util.request_submit_tool(output_text)
+                                        
+                        elif function_name == "cPagamento":
+                            if function_json:
+                                json_data = json.loads(function_json)
+                                #self.api_make_model = APIMakeModel(self.api_model.thread_id,self.api_model.run_id,self.api_model.run_status, self.api_model.call_id, self.api_model.arguments)
+                                self.date_util = DateUtil()
+                                json_data = self.date_util.check_date_agendar(json_data)
+                                response = self.api_mp_model.generate_with_json(json_data)
+                                if response:
+                                    if 'approved' in response.text:
+                                        aguardando_recuperacao_mensagem = False
+                                        aguardando_resposta = False
+                                        output_text = 'Link para pagamento:' + json.loads(response.text).get("init_point")
+                                        requests_util = RequestsUtil(self)
+                                        response_submit_tool_output = requests_util.request_submit_tool(output_text)
 
                         else:
                             pass
