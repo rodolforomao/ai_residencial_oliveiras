@@ -1,6 +1,6 @@
 # models/api_model.py
 import requests
-from config.config import API_KEY, API_URL, ID_ASSISTENT, WEBHOOK_MAKE_AGENDAMENTO, WEBHOOK_MAKE_AGENDAR
+from config.config import API_KEY, API_URL, WEBHOOK_MAKE_AGENDAMENTO, WEBHOOK_MAKE_AGENDAR
 
 class APIMakeModel:
     def __init__(self, thread_id=None, run_id=None, run_status=None, call_id=None, arguments=None):

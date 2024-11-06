@@ -46,11 +46,13 @@ class APIModel:
             pass
         return response
 
-    def criar_run(self, pergunta):
+    def criar_run(self, pergunta, assistent_id = None):
+        if assistent_id is None:
+            assistent_id = ID_ASSISTENT
         url = f"{API_URL}/runs"
         headers = self.get_headers()
         data = {
-            "assistant_id": ID_ASSISTENT,
+            "assistant_id": assistent_id,
             "thread": {
                 "messages": [
                     {"role": "user", "content": pergunta}
@@ -67,10 +69,12 @@ class APIModel:
             print('Erro: ' + response.text)
         return response
 
-    def manter_run(self):
+    def manter_run(self, assistent_id = None):
+        if assistent_id is None:
+            assistent_id = ID_ASSISTENT
         url = f"{API_URL}/{self.thread_id}/runs"
         headers = self.get_headers()
-        data = {"assistant_id": ID_ASSISTENT}
+        data = {"assistant_id": assistent_id}
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             result = response.json()
@@ -108,14 +112,25 @@ class APIModel:
             resposta["data"][0]["content"][0]["text"].get("value")
         )
 
-    def get_function_properties(self, status_response, key):
+    def get_function_properties(self, status_response, key, index = 0, call_id = False):
         required_action = status_response.get('required_action', {})
         submit_tool_outputs = required_action.get('submit_tool_outputs', {})
         tool_calls = submit_tool_outputs.get('tool_calls', [])
 
         # Verificar se a lista 'tool_calls' não está vazia e se o primeiro item contém 'function' e 'name'
-        if tool_calls and 'function' in tool_calls[0] and 'name' in tool_calls[0]['function']:
-            return tool_calls[0]['function'][key]
+        if index >= 0:
+            if call_id:
+                return tool_calls[index][key]
+            elif tool_calls and 'function' in tool_calls[index] and 'name' in tool_calls[index]['function']:
+                return tool_calls[index]['function'][key]
 
         # Retornar um valor padrão (por exemplo, None) caso algo esteja faltando
         return None
+
+    def get_qnty_actions(self, status_response):
+        required_action = status_response.get('required_action', {})
+        submit_tool_outputs = required_action.get('submit_tool_outputs', {})
+        tool_calls = submit_tool_outputs.get('tool_calls', [])
+
+        # Verificar se a lista 'tool_calls' não está vazia e se o primeiro item contém 'function' e 'name'
+        return len(tool_calls)

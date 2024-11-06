@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime, timedelta
 from models.api_make_model import APIMakeModel
 from models.mercado_pago_model import MercadoPagoModel
-from config.config import API_KEY, API_URL, ID_ASSISTENT, WEBHOOK_MAKE_AGENDAMENTO, EMAIL_TEST_MERCADO_PAGO, VALUE_TEST_MERCADO_PAGO
+from config.config import API_KEY, API_URL, WEBHOOK_MAKE_AGENDAMENTO, EMAIL_TEST_MERCADO_PAGO, VALUE_TEST_MERCADO_PAGO
 
 from utils.google_calendar_utils import GoogleCalendarUtil
 

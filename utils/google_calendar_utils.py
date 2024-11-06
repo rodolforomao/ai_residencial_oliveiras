@@ -1,7 +1,7 @@
 # utils/requests_util.py
 import requests
 import pytz
-from config.config import API_KEY, API_URL, ID_ASSISTENT, WEBHOOK_MAKE_AGENDAMENTO, WEBHOOK_MAKE_AGENDAR, CALENDAR_ID_GOOGLE
+from config.config import API_KEY, API_URL, WEBHOOK_MAKE_AGENDAMENTO, WEBHOOK_MAKE_AGENDAR, CALENDAR_ID_GOOGLE
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -14,8 +14,6 @@ class GoogleCalendarUtil:
     def __init__(self):
         SCOPES = [
         "https://www.googleapis.com/auth/calendar",
-        #"https://www.googleapis.com/auth/calendar.events",
-        #"https://www.googleapis.com/auth/calendar.readonly",
     ]
         self.credentials = service_account.Credentials.from_service_account_file(
             'files/google_calendar/credentials2.json', scopes=SCOPES
@@ -82,12 +80,26 @@ class GoogleCalendarUtil:
 
     def create_event(self, json_data):
         try:
+            index1 = "appointment_details"
+            index2 = "description"
+            value_none = "Agendamento não identificado"
+            summary = json_data.get(index1, {}).get(index2, value_none)
+            index2 = "date_start"
+            value_none = datetime.now() + timedelta(days=-1)
+            date_start = json_data.get(index1, {}).get(index2, value_none)
             
-            summary = json_data['appointment_details']['description']
-            date_start = json_data['appointment_details']['date_start']
-            hour_checkin = json_data['appointment_details']['hour_checkin']
-            date_end = json_data['appointment_details']['date_end']
-            hour_checkout = json_data['appointment_details']['hour_checkout']
+            index2 = "hour_checkin"
+            value_none = "14:00"
+            hour_checkin = json_data.get(index1, {}).get(index2, value_none)
+            
+            index2 = "date_end"
+            value_none = datetime.now() + timedelta(days=-1)
+            date_end = json_data.get(index1, {}).get(index2, value_none)
+
+            index2 = "hour_checkout"
+            value_none = "11:00"
+            hour_checkout = json_data.get(index1, {}).get(index2, value_none)
+            
             timezone = 'America/Sao_Paulo'
             
             start_date = f"{date_start}T{hour_checkin}:00"  # Formato ISO: 'YYYY-MM-DDTHH:MM:SS'
@@ -99,15 +111,43 @@ class GoogleCalendarUtil:
             # Verifica se as datas de início e fim foram fornecidas
             if not start_date or not end_date:
                 raise ValueError("As datas de início e fim são obrigatórias.")
+            
+            index2 = "email"
+            value_none = "rodolforomao@gmail.com"
+            e_mail_guest = json_data.get(index1, {}).get(index2, value_none)
+            
 
             # Define o fuso horário
             tz = pytz.timezone(timezone)
             start_datetime = tz.localize(datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S'))
             end_datetime = tz.localize(datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S'))
+            
+            if end_datetime.date() == datetime(end_datetime.year, end_datetime.month, end_datetime.day).date() and end_datetime.hour < 12:
+                end_datetime = (end_datetime - timedelta(days=1)).replace(hour=23, minute=59, second=59)
+                pass
 
+            # Example: Color ID 5 (change to any number 1-11)
+            #  "colorId"
+            #  Azul: 1
+            #  Marrom: 6
+            #  Amarelo: 5
             # Configura os detalhes do evento
+            color_map = {
+                "apartamento 1": "8",  # Brown color ID
+                "apartamento 2": "5",  # Yellow color ID
+                "apartamento 3": "1"   # Blue color ID
+            }
+            # Determine the colorId based on summary content
+            color_id = None
+            if "apartamento 1" in summary.lower():
+                color_id = color_map["apartamento 1"]
+            elif "apartamento 2" in summary.lower():
+                color_id = color_map["apartamento 2"]
+            elif "apartamento 3" in summary.lower():
+                color_id = color_map["apartamento 3"]
+            
             event = {
-                'summary': summary,
+                'summary': '🤖' + summary.replace('🤖',''),
                 'location': "Residencial Oliveiras - Brasília - Vila Planalto",
                 'description': "",
                 'start': {
@@ -126,6 +166,10 @@ class GoogleCalendarUtil:
                         {'method': 'popup', 'minutes': 10080}, # 7 dias antes
                     ],
                 },
+                "colorId": color_id
+                # , "attendees": [
+                #     {"email": e_mail_guest}
+                # ],
             }
 
             # Cria o evento no Google Calendar
