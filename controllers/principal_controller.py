@@ -80,7 +80,8 @@ class PrincipalController:
                         user_id_number = each_msg.get('number')
                         self.user_context = self.user_contexts.get(user_id_number, {})
 
-                        aiagent_respostas, run_id, thread_id = aiagent.iniciar(each_msg, answer_loop = False, assistent_id = ID_ASSISTENT, run_id=self.user_context.get("run_id"), thread_id = self.user_context.get("thread_id"))
+                        #aiagent_respostas, run_id, thread_id = aiagent.iniciar(each_msg, answer_loop = False, assistent_id = ID_ASSISTENT, run_id=self.user_context.get("run_id"), thread_id = self.user_context.get("thread_id"))
+                        aiagent_respostas, run_id, thread_id = aiagent.iniciar(each_msg, answer_loop = False, assistent_id = ID_ASSISTENT)
                         self.queue_manager.adicionar_resposta(aiagent_respostas)
                         
                         self.user_contexts[user_id_number] = {

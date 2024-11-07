@@ -11,6 +11,7 @@ from models.date_util import DateUtil
 from utils.requests_util import RequestsUtil
 from utils.google_calendar_utils import GoogleCalendarUtil
 
+from utils.whatsapp_util import WhatsappUtils
 from views.view import View
 
 class MainController:
@@ -21,11 +22,12 @@ class MainController:
         self.view = View()
         self.schedule_sent_status = []
 
-    def iniciar(self, msg = None, answer_loop = True, assistent_id = None, run_id = None, thread_id = None):
-        if run_id is not None and run_id:
-            self.api_model.run_id = run_id
-        if thread_id is not None and thread_id:
-            self.api_model.thread_id = thread_id
+    #def iniciar(self, msg = None, answer_loop = True, assistent_id = None, run_id = None, thread_id = None):
+    def iniciar(self, msg = None, answer_loop = True, assistent_id = None):
+        # if run_id is not None and run_id:
+        #     self.api_model.run_id = run_id
+        # if thread_id is not None and thread_id:
+        #     self.api_model.thread_id = thread_id
         resposta = None
         while True:
             output_text = None
@@ -33,9 +35,17 @@ class MainController:
                 msg = self.view.capturar_resposta()
             elif isinstance(msg, dict):
                 pergunta = msg['message']
+                number = msg['number']
+                if number:
+                    whatsapputils = WhatsappUtils()
+                    self.api_model.thread_id, self.api_model.run_id  = whatsapputils.get_thread_and_run_ids(number)
             
             if not self.api_model.thread_id and not self.api_model.run_id:
                 request_response = self.api_model.criar_run(pergunta, assistent_id)
+                if number:
+                    # Salvar thread e run no arquivo .json
+                    whatsapputils = WhatsappUtils()
+                    whatsapputils.get_exists_conversation_and_update_thread_run(number, self.api_model.run_id, self.api_model.thread_id)
             else:
                 request_response = self.api_model.criar_mensagem(pergunta)
                 if 'error' in request_response:
@@ -43,6 +53,10 @@ class MainController:
                     if message:
                         print(message)
                 self.api_model.manter_run(assistent_id)
+                if number:
+                    # Salvar run no arquivo .json
+                    whatsapputils = WhatsappUtils()
+                    whatsapputils.get_exists_conversation_and_update_thread_run(number, self.api_model.run_id)
 
             aguardando_resposta = True
             toggleMsg = True

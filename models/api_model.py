@@ -64,6 +64,7 @@ class APIModel:
             result = response.json()
             self.run_id = result.get("id")
             self.thread_id = result.get("thread_id")
+            # Atualizar thread_id e run_id
         else:
             print('Status code: ' + str(response.status_code))
             print('Erro: ' + response.text)
@@ -79,10 +80,10 @@ class APIModel:
         if response.status_code == 200:
             result = response.json()
             self.run_id = result.get("id")
+            # Atualizar run_id
         return response
 
     def get_call_id(self, status_response):
-        # Call id: data.required_action.submit_tool_outputs.tool_calls[0].id
         return (
             status_response.get('required_action') and
             status_response['required_action'].get('submit_tool_outputs') and
@@ -93,7 +94,6 @@ class APIModel:
         )
 
     def get_function_arguments(self, status_response):
-        # Arguments: data.required_action.submit_tool_outputs.tool_calls[0].function.arguments
         return (
             status_response.get('required_action') and
             status_response['required_action'].get('submit_tool_outputs') and
@@ -117,14 +117,12 @@ class APIModel:
         submit_tool_outputs = required_action.get('submit_tool_outputs', {})
         tool_calls = submit_tool_outputs.get('tool_calls', [])
 
-        # Verificar se a lista 'tool_calls' não está vazia e se o primeiro item contém 'function' e 'name'
         if index >= 0:
             if call_id:
                 return tool_calls[index][key]
             elif tool_calls and 'function' in tool_calls[index] and 'name' in tool_calls[index]['function']:
                 return tool_calls[index]['function'][key]
 
-        # Retornar um valor padrão (por exemplo, None) caso algo esteja faltando
         return None
 
     def get_qnty_actions(self, status_response):
@@ -132,5 +130,4 @@ class APIModel:
         submit_tool_outputs = required_action.get('submit_tool_outputs', {})
         tool_calls = submit_tool_outputs.get('tool_calls', [])
 
-        # Verificar se a lista 'tool_calls' não está vazia e se o primeiro item contém 'function' e 'name'
         return len(tool_calls)
